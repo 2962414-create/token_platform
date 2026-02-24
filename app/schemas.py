@@ -14,3 +14,7 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True  # для SQLAlchemy (Pydantic v2)
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
