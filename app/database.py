@@ -1,16 +1,23 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.core.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Создание engine через переменную из .env
+engine = create_engine(settings.DATABASE_URL, echo=False)
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+# Создание фабрики сессий
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
+# Базовый класс для моделей
 Base = declarative_base()
+
+
+# Dependency для FastAPI
 def get_db():
     db = SessionLocal()
     try:
