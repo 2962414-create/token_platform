@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from ..repositories import user_repository
-from ..security import get_password_hash
+from app.models.wallet import Wallet
+import app.repositories.user_repository as user_repository
+from app.security import get_password_hash
 
 
 def register_user(db: Session, email: str, password: str):
@@ -13,7 +14,15 @@ def register_user(db: Session, email: str, password: str):
 
     hashed = get_password_hash(password)
 
-    return user_repository.create_user(db, email, hashed)
+    user = user_repository.create_user(db, email, hashed)
+
+    wallet = Wallet(user_id=user.id)
+    db.add(wallet)
+
+    db.commit()
+    db.refresh(user)
+
+    return user
 
 
 def get_users(db: Session):

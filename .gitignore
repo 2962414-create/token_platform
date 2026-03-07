@@ -1,14 +1,18 @@
+# Virtual environment
+venv/
+
 # Python
 __pycache__/
 *.pyc
 
-# Virtual environment
-venv/
-
 # Environment variables
 .env
 
+.idea/
+.vscode/
 # OS
 .DS_Store
 Thumbs.db
+
 alembic/versions/*.pyc
+

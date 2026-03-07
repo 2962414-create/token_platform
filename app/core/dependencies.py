@@ -1,67 +1,71 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from jose import JWTError, jwt
 
 from app.database import get_db
 from app.models import User
-from app.core.config import settings
+from app.security import decode_token
 
 
-# OAuth2 схема
+# Swagger знает, что login здесь
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 # =========================
-# Получение текущего пользователя
+# CURRENT USER
 # =========================
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
-) -> User:
+):
+    payload = decode_token(token)
 
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    email: str = payload.get("sub")
+    token_type: str = payload.get("type")
 
-    try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+    if email is None or token_type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
         )
-
-        email: str | None = payload.get("sub")
-
-        if email is None:
-            raise credentials_exception
-
-    except JWTError:
-        raise credentials_exception
 
     user = db.query(User).filter(User.email == email).first()
 
     if user is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
 
     return user
 
 
 # =========================
-# Проверка роли admin
+# ADMIN CHECK
 # =========================
 
-def require_admin(
-    current_user: User = Depends(get_current_user)
-) -> User:
+def require_admin(current_user: User = Depends(get_current_user)):
 
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
+            detail="Not enough permissions"
         )
 
     return current_user
+
+
+# =========================
+# GENERIC ROLE CHECK
+# =========================
+
+def require_role(required_role: str):
+    def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden"
+            )
+        return current_user
+    return role_checker

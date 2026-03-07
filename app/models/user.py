@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+
 
 
 class User(Base):
@@ -13,3 +14,5 @@ class User(Base):
     role = Column(String, default="user")
 
     wallet = relationship("Wallet", back_populates="user", uselist=False)
+    
+   
